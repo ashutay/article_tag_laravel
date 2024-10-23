@@ -10,6 +10,6 @@ class Article extends Model
 
     public function tags()
     {
-        return $this->belongsToMany(Tag::class)->withPivot('attached_at')->withTimestamps;
+        return $this->belongsToMany(Tag::class)->withPivot('attached_at');
     }
 }
