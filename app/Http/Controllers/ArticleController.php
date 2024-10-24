@@ -14,7 +14,7 @@ class ArticleController extends Controller
      */
     public function index(): JsonResponse
     {
-        $articles = Article::with('tags')->get();
+        $articles = Article::with('tags')->orderBy('id')->get();
 
         return response()->json($articles);
     }
@@ -28,18 +28,16 @@ class ArticleController extends Controller
         $validateData = $request->validate([
             'title' => 'required|string|max:255',
             'tags' => 'array',
-            'tags.*' => 'string|max:255'
+            'tags.*' => 'string|max:255|distinct'
         ]);
 
         $article = Article::create([
             'title' => $validateData['title']
         ]);
 
-        if(isset($validateData['tags']))
-        {
+        if (isset($validateData['tags'])) {
             $newTags = [];
-            foreach ($validateData['tags'] as $tagName)
-            {
+            foreach ($validateData['tags'] as $tagName) {
                 $tag = Tag::firstOrCreate(['name' => $tagName]);
                 $newTags[] = $tag->id;
             }
@@ -65,7 +63,30 @@ class ArticleController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $validateData = $request->validate([
+            'title' => 'string|max:255',
+            'tags' => 'array',
+            'tags.*' => 'string|max:255|distinct'
+        ]);
+
+        $article = Article::findOrFail($id);
+
+        if (isset($validateData['title'])) {
+            $article->update([
+                'title' => $validateData['title']
+            ]);
+        }
+
+        if (array_key_exists('tags', $validateData)) {
+            $newTags = [];
+            foreach ($validateData['tags'] as $tagName) {
+                $tag = Tag::firstOrCreate(['name' => $tagName]);
+                $newTags[] = $tag->id;
+            }
+            $article->tags()->sync($newTags);
+        }
+
+        return response()->json($article->load('tags'));
     }
 
     /**
