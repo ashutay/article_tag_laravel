@@ -12,9 +12,23 @@ class ArticleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $articles = Article::with('tags')->orderBy('id')->get();
+        $validatedData = $request->validate([
+            'tags' => 'array',
+            'tags.*' => 'string|max:255'
+        ]);
+
+        $articlesQuery = Article::query()
+            ->whereActive()
+            ->with('tags')
+            ->orderBy('id');
+
+        if (!empty($validatedData['tags'])) {
+            $articlesQuery->whereTags($validatedData['tags']);
+        }
+
+        $articles = $articlesQuery->get();
 
         return response()->json($articles);
     }
